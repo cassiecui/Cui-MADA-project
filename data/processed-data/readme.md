@@ -1,7 +1,14 @@
 # processed-data
 
-This folder contains data that has been processed and cleaned by code.
+Created by `code/processing-code/processingfile-v1.qmd` from the live HMP
+download. Both files are `phyloseq` objects.
 
-Any files located in here are based on the raw data and can be re-created running the various processing/cleaning code scripts in the `code` folder.
+| File | Description |
+|------|-------------|
+| `ps_filt.rds` | Filtered count-level object: zero-count taxa removed, taxa present in ≤ 5 samples removed. |
+| `ps_rel.rds`  | Same samples and taxa, transformed to within-sample relative abundance (`x / sum(x)`). |
 
-You could add a codebook here, but you could also just provide enough comments in the code that produces the content in this folder for users to understand what is saved in this location.
+The simplified `SampleType` factor (Airways / Gut / Oral / Skin / Urogenital)
+is added downstream in `eda.qmd` and `statistical-analysis.R`. Re-running the
+processing Quarto file recreates these RDS files identically thanks to fixed
+seeds.

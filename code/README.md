@@ -1,12 +1,27 @@
 # code
 
-This folder and sub-folders should contain all your code. This can be R or Quarto files (or files for other programming languages). 
+All analysis code for the project. The pipeline is split into three stages,
+each in its own subfolder. Run them in order.
 
-Place your files in the appropriate sub-folders. You can structure the folders as appropriate.
+```
+code/
+├── processing-code/   # Stage 1: download HMP data, build phyloseq objects
+├── eda-code/          # Stage 2: exploratory data analysis
+└── analysis-code/     # Stage 3: formal hypothesis tests + ML modeling
+```
 
-You can either have fewer large scripts, or multiple scripts that do only specific actions. Those can be R or Quarto files (or some other language/format). In either case, document the scripts and what goes on in them so well that someone else (including future you) can easily figure out what is happening.
+## Run order
 
-The scripts should load the appropriate data (e.g. raw or processed), perform actions, and save results (e.g. processed data, figures, computed values) in the appropriate folders. Document somewhere what inputs each script takes and where output is placed. 
+1. `processing-code/processingfile-v1.qmd` — downloads `HMP16SData::V35()`,
+   filters rare taxa, and writes
+   `data/processed-data/ps_filt.rds` and `ps_rel.rds`.
+2. `eda-code/eda.qmd` — sequencing-depth, top-phyla, alpha-diversity boxplots,
+   and the `exploratory_summary_by_subsite.rds` table.
+3. `analysis-code/statistical-analysis.R` — Kruskal-Wallis + pairwise Wilcoxon
+   for alpha diversity (H1), PERMANOVA + BETADISPER for beta diversity (H2),
+   per-site co-occurrence networks (H3), and the supervised body-site
+   classifier with cross-validation, model comparison, and bootstrap-based
+   uncertainty (H4).
 
-If scripts need to be run in a specific order, document this. Either as comments in the script, or in a separate text file such as this readme file. Ideally of course in both locations.
-
+All randomness uses `set.seed(123)`. Outputs are written to
+`results/figures/`, `results/tables/`, and `results/output/`.

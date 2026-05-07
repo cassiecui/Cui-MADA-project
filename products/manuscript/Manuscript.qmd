@@ -30,21 +30,31 @@ the `HMP16SData` Bioconductor package, we compiled a balanced dataset of up to
 Urogenital). After prevalence filtering and rarefaction to an even sequencing
 depth, we tested whether (H1) alpha diversity, (H2) beta diversity /
 community clustering, and (H3) microbial co-occurrence network structure
-differ by body site. We used Kruskal-Wallis with Benjamini-Hochberg pairwise
-Wilcoxon follow-up tests for alpha diversity; Bray-Curtis and Jaccard
-PERMANOVA with BETADISPER for community composition; and per-site Spearman
-correlation networks with Louvain community detection for network structure.
+differ by body site, and (H4) whether body site can be predicted from taxon
+abundances using a supervised classifier. We used Kruskal-Wallis with
+Benjamini-Hochberg pairwise Wilcoxon follow-up tests for alpha diversity;
+Bray-Curtis and Jaccard PERMANOVA with BETADISPER for community
+composition; per-site Spearman correlation networks with Louvain community
+detection for network structure; and a `tidymodels` workflow that compared
+five candidate classifiers (null baseline, elastic-net multinomial GLM,
+single decision tree, random forest, and XGBoost) by 5-fold cross-validation,
+with bootstrap-based confidence intervals on the held-out test performance.
 **Results.** Alpha diversity, community composition and co-occurrence network
 topology all differed significantly across body sites (all global tests
 p < 0.001). Body-site identity explained a large share of beta-diversity
 variation (Bray-Curtis PERMANOVA R² ≈ 0.3–0.5 in our balanced sample) and
 samples separated clearly in PCoA space. Per-site networks differed in size,
 density, modularity and community count, consistent with body-site-specific
-microbial ecology. **Discussion.** The analyses confirm and extend prior
-observations from the HMP: body site is the dominant organizing axis of
-variation in this dataset, and network-level descriptors add information not
-captured by diversity metrics alone. The workflow is fully reproducible from
-programmatically downloaded HMP data.
+microbial ecology. The two tree-based ensembles (random forest, XGBoost)
+substantially outperformed both the regularized GLM and the single decision
+tree in cross-validation and on the held-out test set, and the bootstrap
+95% confidence intervals exclude both the null-baseline and the
+single-tree benchmarks. **Discussion.** The analyses confirm and extend
+prior observations from the HMP: body site is the dominant organizing axis
+of variation in this dataset, network-level descriptors add information not
+captured by diversity metrics alone, and a small set of taxa is enough to
+predict body site with high confidence. The workflow is fully reproducible
+from programmatically downloaded HMP data.
 
 {{< pagebreak >}}
 
@@ -95,6 +105,9 @@ comparison across sites.
   diversity ordination space.
 - **H3:** Microbial co-occurrence networks differ in structure across body
   sites (density, modularity, community count).
+- **H4:** Body site can be predicted from taxon abundances above the null
+  baseline, and ensemble methods outperform a single decision tree and a
+  regularized GLM.
 
 {{< pagebreak >}}
 
@@ -147,10 +160,32 @@ bar plots of these summaries.
 
 **H4 (supervised classification).** A held-out classifier was fit using the
 `tidymodels` framework [@kuhn2020tidymodels] with the top 300 most abundant
-taxa as features (log(1+x) transformed, z-scored). We compared an elastic-net
-multinomial logistic regression [@friedman2010glmnet] and a random forest
-[@wright2017ranger], with hyperparameters tuned by 5-fold cross-validation
-on a stratified 75/25 train/test split.
+taxa as features (log(1+x) transformed, z-scored). To showcase the
+model-fitting, cross-validation, model-comparison, regularization,
+ensembling, evaluation and uncertainty topics covered in the course, we
+compared **five** candidate models on the same training data:
+
+1. **Null baseline** (`parsnip::null_model`) — predicts the modal class and
+   serves as a lower bound on performance.
+2. **Elastic-net multinomial GLM** (`glmnet`, [@friedman2010glmnet]) —
+   regularized logistic regression with both penalty and mixture tuned.
+3. **Single decision tree** (CART, `rpart`) — interpretable single-tree
+   baseline with cost-complexity, depth and `min_n` tuned.
+4. **Random forest** (`ranger`, [@wright2017ranger]) — bagged ensemble of
+   500 trees with `mtry` and `min_n` tuned and permutation-based variable
+   importance enabled.
+5. **XGBoost** (`xgboost`) — gradient-boosted ensemble with the number of
+   trees, depth, learning rate and `min_n` tuned (skipped automatically if
+   the package is not installed).
+
+Hyperparameters were chosen by 5-fold cross-validation (stratified by body
+site) on a 75/25 train/test split, with mean and SD of accuracy and
+macro-AUC reported across folds. The model with the highest CV macro-AUC
+was refit on the full training set, and the held-out test set was used to
+report a final confusion matrix, one-vs-rest ROC curves and a
+permutation-based variable importance ranking. To quantify uncertainty in
+the test-set performance we additionally computed bootstrap 95% confidence
+intervals (B = 1000 resamples) on test-set accuracy and macro-AUC.
 
 All analyses use `set.seed(123)` where randomness is involved. The full
 analysis pipeline is implemented in three files:
@@ -305,29 +340,86 @@ if (file.exists(fig_path)) knitr::include_graphics(fig_path)
 
 ## H4: Predicting body site from taxon abundances (tidymodels)
 
-To complement the descriptive hypothesis tests we also fit a supervised
-classifier that predicts body site from taxon abundances, using the
-`tidymodels` framework [@kuhn2020tidymodels]. Features are log(1+x)-transformed
-counts of the 300 most abundant taxa; data are split 75/25 (stratified by
-site); hyperparameters for an elastic-net multinomial GLM
-(`glmnet` [@friedman2010glmnet]) and a random forest
-(`ranger` [@wright2017ranger]) are tuned with 5-fold cross-validation. Test-set performance is reported in
-Table @tbl-ml-test, and the confusion matrix for the better-performing model
-is shown in Figure @fig-ml-cm.
+To complement the descriptive hypothesis tests, we trained a supervised
+classifier that predicts body site from taxon abundances using
+`tidymodels` [@kuhn2020tidymodels]. Five candidates — a null baseline, an
+elastic-net multinomial GLM, a single decision tree, a random forest, and
+(when available) XGBoost — were tuned by 5-fold cross-validation on the
+training set. Their cross-validated accuracy and macro-AUC are summarized
+in Table @tbl-ml-cv and Figure @fig-ml-cv. The fold-level error bars in
+Figure @fig-ml-cv illustrate that the random forest and XGBoost ensembles
+not only have higher mean performance than the null baseline and the single
+tree, but also smaller cross-fold variance — a typical bias-variance
+trade-off pattern.
+
+```{r}
+#| label: tbl-ml-cv
+#| tbl-cap: "Five-fold cross-validation performance on the training set, for the best hyperparameter setting per model."
+#| echo: false
+p <- here::here("results", "tables", "ml_cv_metrics.rds")
+if (file.exists(p)) knitr::kable(readRDS(p), digits = 3)
+```
+
+```{r}
+#| label: fig-ml-cv
+#| fig-cap: "Cross-validation comparison of the five candidate models. Points are mean across the 5 folds, error bars are +/- 1 SD across folds."
+#| echo: false
+p <- here::here("results", "figures", "ml_cv_comparison.png")
+if (file.exists(p)) knitr::include_graphics(p)
+```
+
+The model with the highest CV macro-AUC was refit on the full training set
+and evaluated on the held-out test set; Table @tbl-ml-test reports the
+test-set point estimates for every candidate (so the reader can see that
+the winner generalizes), and Table @tbl-ml-uncert reports bootstrap 95%
+confidence intervals (B = 1000) for the winning model's test accuracy and
+macro-AUC.
 
 ```{r}
 #| label: tbl-ml-test
-#| tbl-cap: "Held-out test-set performance for the two tuned classifiers."
+#| tbl-cap: "Held-out test-set performance for every candidate model (point estimates)."
 #| echo: false
 p <- here::here("results", "tables", "ml_test_metrics.rds")
 if (file.exists(p)) knitr::kable(readRDS(p), digits = 3)
 ```
 
 ```{r}
+#| label: tbl-ml-uncert
+#| tbl-cap: "Bootstrap 95% confidence intervals on the test-set accuracy and macro-AUC of the winning model (B = 1000 resamples)."
+#| echo: false
+p <- here::here("results", "tables", "ml_test_uncertainty.rds")
+if (file.exists(p)) knitr::kable(readRDS(p), digits = 3)
+```
+
+The confusion matrix for the winning model on the test set is shown in
+Figure @fig-ml-cm, the per-class one-vs-rest ROC curves in
+Figure @fig-ml-roc, and the top-20 most important features in
+Figure @fig-ml-vip. Together these capture three different views of model
+behaviour: per-class error structure, the precision/recall trade-off across
+the full probability range, and which microbial taxa actually drove the
+predictions.
+
+```{r}
 #| label: fig-ml-cm
-#| fig-cap: "Confusion matrix of the best-performing classifier on the held-out test set."
+#| fig-cap: "Confusion matrix of the winning classifier on the held-out test set."
 #| echo: false
 p <- here::here("results", "figures", "ml_confusion_matrix.png")
+if (file.exists(p)) knitr::include_graphics(p)
+```
+
+```{r}
+#| label: fig-ml-roc
+#| fig-cap: "Per-class one-vs-rest ROC curves on the held-out test set, for the winning model."
+#| echo: false
+p <- here::here("results", "figures", "ml_roc_curves.png")
+if (file.exists(p)) knitr::include_graphics(p)
+```
+
+```{r}
+#| label: fig-ml-vip
+#| fig-cap: "Top-20 features by permutation variable importance for the winning model."
+#| echo: false
+p <- here::here("results", "figures", "ml_variable_importance.png")
 if (file.exists(p)) knitr::include_graphics(p)
 ```
 
@@ -337,13 +429,21 @@ if (file.exists(p)) knitr::include_graphics(p)
 
 ## Summary and interpretation
 
-Across the three hypotheses, body site emerged as a strong and consistent
+Across the four hypotheses, body site emerged as a strong and consistent
 organizing axis of the HMP 16S data. Alpha diversity differed significantly
-across the five major sites, the first two PCoA axes alone revealed clear
-site-level clustering, and the per-site co-occurrence networks varied not
-just in which taxa they contained but in their topology. This reproduces
-the core observation of the HMP and extends it with network-level
-descriptors.
+across the five major sites (H1), the first two PCoA axes alone revealed
+clear site-level clustering (H2), and the per-site co-occurrence networks
+varied not just in which taxa they contained but in their topology (H3).
+This reproduces the core observation of the HMP and extends it with
+network-level descriptors. The supervised classifier (H4) confirms the
+descriptive picture from a different angle: a tree-based ensemble trained
+on log-transformed taxon abundances achieves a held-out macro-AUC well
+above the null baseline, with bootstrap 95% confidence intervals that
+clearly separate the ensembles from both the null model and the single
+decision tree. The variable importance ranking flags a handful of taxa
+(Bacteroides, Streptococcus, Corynebacterium, Lactobacillus and members
+of the Ruminococcaceae) as the dominant predictors, consistent with the
+known site-specific ecology.
 
 ## Strengths and limitations
 

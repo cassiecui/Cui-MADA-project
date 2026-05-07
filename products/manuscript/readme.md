@@ -1,7 +1,17 @@
-This folder contains a template for an academic manuscript. The content of the template is structured as a report for a class, but you can easily replace it with whatever structure you need.
+# manuscript
 
-Most manuscripts these days have supplementary material, place those into the `supplement` folder. (You can have the supplement inside the `manuscript` folder or next to it, whatever is better for your setup).
+`Manuscript.qmd` is the main paper:
+*Comparing Microbial Diversity and Co-Occurrence Networks Across Five Major
+Body Sites in the Human Microbiome Project.* It renders to both `html` and
+`docx` and pulls every figure and table from `results/` via `here::here()`.
 
-Figures/tables/etc. should be pulled from their respective locations by code, as shown in the example.
+`supplement/Supplementary-Material.qmd` is the methods/results supplement
+(extra method detail, pairwise alpha-diversity contrasts, full network
+statistics, ML model-comparison tables and ROC curves with bootstrap CIs).
+It renders to `html` and `pdf`.
 
-Based on what most journals want, it is generally best to have the main manuscript render to a Word file, and the supplement to a PDF. Deviations might be necessary, based on specific circumstances.
+Both files use:
+
+- bibliography: `../../assets/dataanalysis-references.bib`
+- citation style: `../../assets/american-journal-of-epidemiology.csl`
+  (main) and `../../../assets/vancouver-author-date.csl` (supplement).

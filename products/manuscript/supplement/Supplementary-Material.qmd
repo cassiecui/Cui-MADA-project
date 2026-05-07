@@ -6,10 +6,6 @@ format:
   html:
     toc: true
     number-sections: true
-  pdf:
-    toc: false
-    number-sections: true
-    highlight-style: github
 bibliography: ../../../assets/dataanalysis-references.bib
 csl: ../../../assets/vancouver-author-date.csl
 ---
@@ -32,24 +28,31 @@ summaries).
 
 The project has three code stages. Run them in the following order:
 
-1. `code/processing-code/processingcode.R` *(or `processingfile-v2.qmd`)* —
-   downloads the HMP V3–V5 data with `HMP16SData::V35()`, performs stratified
-   subsampling, prevalence and abundance filtering, and writes
-   `data/processed-data/ps_filt.rds` and `data/processed-data/ps_rel.rds`.
+1. `code/processing-code/processingfile-v1.qmd` — downloads the HMP V3–V5
+   data with `HMP16SData::V35()`, removes zero-count and rare taxa, and
+   writes `data/processed-data/ps_filt.rds` and
+   `data/processed-data/ps_rel.rds`.
 2. `code/eda-code/eda.qmd` — produces the exploratory figures
    (`seq_depth.png`, `top_phyla.png`, `alpha_diversity_5sites.png`,
    `shannon_boxplot.png`, `pcoa_preview.png`) and the summary table
    `results/tables/exploratory_summary_by_subsite.rds`.
 3. `code/analysis-code/statistical-analysis.R` — runs the formal hypothesis
    tests (Kruskal-Wallis, pairwise Wilcoxon, PERMANOVA, BETADISPER),
-   builds per-site co-occurrence networks, and writes every table used in
-   the manuscript (`alpha_kruskal.rds`, `alpha_pairwise.rds`,
-   `permanova.rds`, `network_stats.rds`) plus figures
+   builds per-site co-occurrence networks, and trains the supervised
+   body-site classifier with cross-validation, model comparison and
+   bootstrap-based uncertainty. Outputs include all tables
+   (`alpha_kruskal.rds`, `alpha_pairwise.rds`, `permanova.rds`,
+   `network_stats.rds`, `ml_cv_metrics.rds`, `ml_test_metrics.rds`,
+   `ml_test_uncertainty.rds`, `ml_best_params.rds`,
+   `ml_confusion_matrix.rds`, `ml_variable_importance.rds`) and figures
    (`pcoa_ordination_5sites.png`, `hierarchical_clustering_5sites.png`,
-   `network_statistics_comparison.png`).
+   `network_statistics_comparison.png`, `ml_cv_comparison.png`,
+   `ml_confusion_matrix.png`, `ml_roc_curves.png`,
+   `ml_variable_importance.png`).
 
-The manuscript Quarto file `products/manuscript/Manuscript.qmd` pulls these
-results in via `readRDS()` and `knitr::include_graphics()`.
+The manuscript Quarto file `products/manuscript/Manuscript.qmd` and this
+supplement pull these results in via `readRDS()` and
+`knitr::include_graphics()`.
 
 {{< pagebreak >}}
 
@@ -86,6 +89,43 @@ Edges are retained when |r| ≥ 0.5 and p < 0.01 (no multiple-testing
 correction is applied inside the network — this is a pragmatic threshold,
 not a formal significance test). Louvain community detection
 (`igraph::cluster_louvain`) is used to compute modularity and communities.
+
+## Supervised classification (H4)
+
+The H4 pipeline showcases several data-science topics from the course in
+one place: model fitting and tuning, cross-validation, model comparison,
+regularization, ensemble methods, calibration via ROC curves, variable
+importance, and uncertainty quantification.
+
+- *Features.* The 300 most-abundant taxa, log(1 + x)-transformed and
+  z-scored. Constant-zero predictors are removed with `step_zv`.
+- *Resampling.* A 75/25 stratified train/test split, with 5-fold
+  cross-validation on the training set, also stratified by body site.
+- *Candidate models.* Five workflows:
+    1. `parsnip::null_model` — baseline that always predicts the modal
+       class.
+    2. `multinom_reg` (glmnet) — elastic-net regularized multinomial
+       logistic regression; `penalty` swept on a log-grid from 1e-4 to 1
+       and `mixture` swept from 0 (ridge) to 1 (lasso).
+    3. `decision_tree` (rpart) — single CART; `cost_complexity` from 1e-4
+       to 1e-1, `tree_depth` from 3 to 15, and `min_n` from 2 to 20.
+    4. `rand_forest` (ranger, 500 trees, `importance = "permutation"`) —
+       `mtry` swept on \{5, 35, 70, 100\} and `min_n` on \{2, 8, 14, 20\}.
+    5. `boost_tree` (xgboost) — `trees` \{100, 800\}, `tree_depth`
+       \{3, 9\}, `learn_rate` swept on a log-grid from 1e-2 to ~3e-1, and
+       `min_n` \{2, 20\}. Skipped automatically when `xgboost` is not
+       installed.
+- *Selection.* For each model we pick the hyperparameter setting that
+  maximizes mean macro-AUC across the 5 folds, then refit on the full
+  training set and evaluate on the held-out test set.
+- *Uncertainty.* Test-set accuracy and macro-AUC are bootstrapped on the
+  predictions: 1000 resamples (with replacement) of the per-row
+  prediction tibble, and the 2.5%/97.5% quantiles serve as the 95%
+  confidence interval.
+- *Variable importance.* For the winning model, we extract the top-20
+  features by `vip::vi`, which uses the engine-native importance
+  (permutation importance for ranger, gain for xgboost, and absolute
+  coefficient size for glmnet).
 
 {{< pagebreak >}}
 
@@ -141,6 +181,58 @@ one representative network per body site.
 #| fig-cap: "Representative co-occurrence network visualization (replace with a saved network PNG)."
 fig_path <- here::here("results", "figures",
                        "network_statistics_comparison.png")
+if (file.exists(fig_path)) knitr::include_graphics(fig_path)
+```
+
+## Cross-validation comparison and tuned hyperparameters
+
+Table @tbl-ml-cv-supp gives the full cross-validation summary across the
+five candidate models, and Table @tbl-ml-best-params lists the
+hyperparameters selected by `select_best(metric = "roc_auc")` for each
+non-null model.
+
+```{r, echo=FALSE}
+#| label: tbl-ml-cv-supp
+#| tbl-cap: "Cross-validation accuracy and macro-AUC for every candidate model (mean +/- SD across folds)."
+p <- here::here("results", "tables", "ml_cv_metrics.rds")
+if (file.exists(p)) knitr::kable(readRDS(p), digits = 3)
+```
+
+```{r, echo=FALSE}
+#| label: tbl-ml-best-params
+#| tbl-cap: "Tuned hyperparameter values selected on cross-validation macro-AUC."
+p <- here::here("results", "tables", "ml_best_params.rds")
+if (file.exists(p)) knitr::kable(readRDS(p))
+```
+
+## Test-set ROC curves and bootstrap uncertainty
+
+Figure @fig-ml-roc-supp shows the per-class ROC curves for the winning
+model, and Table @tbl-ml-uncert-supp reports bootstrap 95% confidence
+intervals on test accuracy and macro-AUC (B = 1000 resamples). The CIs are
+narrow on this dataset, which reflects the large held-out test sample and
+the strong signal in the features.
+
+```{r, echo=FALSE}
+#| label: fig-ml-roc-supp
+#| fig-cap: "Test-set one-vs-rest ROC curves for the winning classifier."
+fig_path <- here::here("results", "figures", "ml_roc_curves.png")
+if (file.exists(fig_path)) knitr::include_graphics(fig_path)
+```
+
+```{r, echo=FALSE}
+#| label: tbl-ml-uncert-supp
+#| tbl-cap: "Bootstrap 95% CIs on test-set accuracy and macro-AUC (winning model)."
+p <- here::here("results", "tables", "ml_test_uncertainty.rds")
+if (file.exists(p)) knitr::kable(readRDS(p), digits = 3)
+```
+
+## Variable importance
+
+```{r, echo=FALSE}
+#| label: fig-ml-vip-supp
+#| fig-cap: "Top 20 features (taxa) for the winning classifier, ranked by importance."
+fig_path <- here::here("results", "figures", "ml_variable_importance.png")
 if (file.exists(fig_path)) knitr::include_graphics(fig_path)
 ```
 

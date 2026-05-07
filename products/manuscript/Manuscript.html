@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Kexin Cui">
-<meta name="dcterms.date" content="2026-04-21">
+<meta name="dcterms.date" content="2026-05-06">
 
 <title>Comparing Microbial Diversity and Co-Occurrence Networks Across Five Major Body Sites in the Human Microbiome Project</title>
 <style>
@@ -120,7 +120,7 @@ div.csl-indent {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 21, 2026</p>
+      <p class="date">May 6, 2026</p>
     </div>
   </div>
   
@@ -134,7 +134,7 @@ div.csl-indent {
 
 <section id="summary-abstract" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Summary / Abstract</h1>
-<p><strong>Background.</strong> Human-associated microbial communities vary strongly by body site, and characterizing this variation is an important first step for any clinical or ecological application of microbiome data. <strong>Methods.</strong> Using 16S rRNA V3–V5 data from the Human Microbiome Project (HMP), accessed through the <code>HMP16SData</code> Bioconductor package, we compiled a balanced dataset of up to 200 samples from each of five major body sites (Airways, Gut, Oral, Skin, Urogenital). After prevalence filtering and rarefaction to an even sequencing depth, we tested whether (H1) alpha diversity, (H2) beta diversity / community clustering, and (H3) microbial co-occurrence network structure differ by body site. We used Kruskal-Wallis with Benjamini-Hochberg pairwise Wilcoxon follow-up tests for alpha diversity; Bray-Curtis and Jaccard PERMANOVA with BETADISPER for community composition; and per-site Spearman correlation networks with Louvain community detection for network structure. <strong>Results.</strong> Alpha diversity, community composition and co-occurrence network topology all differed significantly across body sites (all global tests p &lt; 0.001). Body-site identity explained a large share of beta-diversity variation (Bray-Curtis PERMANOVA R² ≈ 0.3–0.5 in our balanced sample) and samples separated clearly in PCoA space. Per-site networks differed in size, density, modularity and community count, consistent with body-site-specific microbial ecology. <strong>Discussion.</strong> The analyses confirm and extend prior observations from the HMP: body site is the dominant organizing axis of variation in this dataset, and network-level descriptors add information not captured by diversity metrics alone. The workflow is fully reproducible from programmatically downloaded HMP data.</p>
+<p><strong>Background.</strong> Human-associated microbial communities vary strongly by body site, and characterizing this variation is an important first step for any clinical or ecological application of microbiome data. <strong>Methods.</strong> Using 16S rRNA V3–V5 data from the Human Microbiome Project (HMP), accessed through the <code>HMP16SData</code> Bioconductor package, we compiled a balanced dataset of up to 200 samples from each of five major body sites (Airways, Gut, Oral, Skin, Urogenital). After prevalence filtering and rarefaction to an even sequencing depth, we tested whether (H1) alpha diversity, (H2) beta diversity / community clustering, and (H3) microbial co-occurrence network structure differ by body site, and (H4) whether body site can be predicted from taxon abundances using a supervised classifier. We used Kruskal-Wallis with Benjamini-Hochberg pairwise Wilcoxon follow-up tests for alpha diversity; Bray-Curtis and Jaccard PERMANOVA with BETADISPER for community composition; per-site Spearman correlation networks with Louvain community detection for network structure; and a <code>tidymodels</code> workflow that compared five candidate classifiers (null baseline, elastic-net multinomial GLM, single decision tree, random forest, and XGBoost) by 5-fold cross-validation, with bootstrap-based confidence intervals on the held-out test performance. <strong>Results.</strong> Alpha diversity, community composition and co-occurrence network topology all differed significantly across body sites (all global tests p &lt; 0.001). Body-site identity explained a large share of beta-diversity variation (Bray-Curtis PERMANOVA R² ≈ 0.3–0.5 in our balanced sample) and samples separated clearly in PCoA space. Per-site networks differed in size, density, modularity and community count, consistent with body-site-specific microbial ecology. The two tree-based ensembles (random forest, XGBoost) substantially outperformed both the regularized GLM and the single decision tree in cross-validation and on the held-out test set, and the bootstrap 95% confidence intervals exclude both the null-baseline and the single-tree benchmarks. <strong>Discussion.</strong> The analyses confirm and extend prior observations from the HMP: body site is the dominant organizing axis of variation in this dataset, network-level descriptors add information not captured by diversity metrics alone, and a small set of taxa is enough to predict body site with high confidence. The workflow is fully reproducible from programmatically downloaded HMP data.</p>
 <div style="page-break-after: always;"></div>
 </section>
 <section id="introduction" class="level1" data-number="2">
@@ -155,6 +155,7 @@ div.csl-indent {
 <li><strong>H1:</strong> Microbial alpha diversity differs significantly across the five major body sites.</li>
 <li><strong>H2:</strong> Microbial communities cluster distinctly by body site in beta diversity ordination space.</li>
 <li><strong>H3:</strong> Microbial co-occurrence networks differ in structure across body sites (density, modularity, community count).</li>
+<li><strong>H4:</strong> Body site can be predicted from taxon abundances above the null baseline, and ensemble methods outperform a single decision tree and a regularized GLM.</li>
 </ul>
 <div style="page-break-after: always;"></div>
 </section>
@@ -174,7 +175,15 @@ div.csl-indent {
 <p><strong>H1 (alpha diversity).</strong> For each sample we calculated Observed richness, Shannon <span class="citation" data-cites="shannon1948">(<a href="#ref-shannon1948" role="doc-biblioref">9</a>)</span>, Simpson and Chao1 indices using <code>phyloseq::estimate_richness()</code> <span class="citation" data-cites="mcmurdie2013">(<a href="#ref-mcmurdie2013" role="doc-biblioref">7</a>)</span>. For each metric we tested for a body-site effect with a Kruskal-Wallis test; when significant (α = 0.05) we performed Benjamini-Hochberg-adjusted pairwise Wilcoxon tests.</p>
 <p><strong>H2 (beta diversity).</strong> We log(1 + x) transformed counts and computed Bray-Curtis <span class="citation" data-cites="bray1957">(<a href="#ref-bray1957" role="doc-biblioref">10</a>)</span> and Jaccard distances using <code>vegan::vegdist</code> <span class="citation" data-cites="oksanen2024vegan">(<a href="#ref-oksanen2024vegan" role="doc-biblioref">8</a>)</span>. Body-site effects were tested with PERMANOVA <span class="citation" data-cites="anderson2001">(<a href="#ref-anderson2001" role="doc-biblioref">11</a>)</span> (<code>vegan::adonis2</code>), together with a BETADISPER test for equality of dispersion. Samples were visualized in PCoA space (Bray-Curtis) with 95% confidence ellipses and via Ward-D2 hierarchical clustering.</p>
 <p><strong>H3 (co-occurrence networks).</strong> For each body site we computed a Spearman correlation matrix over taxa that appeared in ≥ 10% of samples (<code>Hmisc::rcorr</code>). Edges were retained when |r| ≥ 0.5 and p &lt; 0.01; isolated nodes were removed. Networks were built and analyzed with <code>igraph</code> <span class="citation" data-cites="csardi2006igraph">(<a href="#ref-csardi2006igraph" role="doc-biblioref">12</a>)</span>, with communities detected by the Louvain algorithm <span class="citation" data-cites="blondel2008">(<a href="#ref-blondel2008" role="doc-biblioref">13</a>)</span>. We characterized each network by node count, edge count, density, average degree, global clustering coefficient, Louvain modularity, and number of Louvain communities. Networks were compared visually using bar plots of these summaries.</p>
-<p><strong>H4 (supervised classification).</strong> A held-out classifier was fit using the <code>tidymodels</code> framework <span class="citation" data-cites="kuhn2020tidymodels">(<a href="#ref-kuhn2020tidymodels" role="doc-biblioref">14</a>)</span> with the top 300 most abundant taxa as features (log(1+x) transformed, z-scored). We compared an elastic-net multinomial logistic regression <span class="citation" data-cites="friedman2010glmnet">(<a href="#ref-friedman2010glmnet" role="doc-biblioref">15</a>)</span> and a random forest <span class="citation" data-cites="wright2017ranger">(<a href="#ref-wright2017ranger" role="doc-biblioref">16</a>)</span>, with hyperparameters tuned by 5-fold cross-validation on a stratified 75/25 train/test split.</p>
+<p><strong>H4 (supervised classification).</strong> A held-out classifier was fit using the <code>tidymodels</code> framework <span class="citation" data-cites="kuhn2020tidymodels">(<a href="#ref-kuhn2020tidymodels" role="doc-biblioref">14</a>)</span> with the top 300 most abundant taxa as features (log(1+x) transformed, z-scored). To showcase the model-fitting, cross-validation, model-comparison, regularization, ensembling, evaluation and uncertainty topics covered in the course, we compared <strong>five</strong> candidate models on the same training data:</p>
+<ol type="1">
+<li><strong>Null baseline</strong> (<code>parsnip::null_model</code>) — predicts the modal class and serves as a lower bound on performance.</li>
+<li><strong>Elastic-net multinomial GLM</strong> (<code>glmnet</code>, <span class="citation" data-cites="friedman2010glmnet">(<a href="#ref-friedman2010glmnet" role="doc-biblioref">15</a>)</span>) — regularized logistic regression with both penalty and mixture tuned.</li>
+<li><strong>Single decision tree</strong> (CART, <code>rpart</code>) — interpretable single-tree baseline with cost-complexity, depth and <code>min_n</code> tuned.</li>
+<li><strong>Random forest</strong> (<code>ranger</code>, <span class="citation" data-cites="wright2017ranger">(<a href="#ref-wright2017ranger" role="doc-biblioref">16</a>)</span>) — bagged ensemble of 500 trees with <code>mtry</code> and <code>min_n</code> tuned and permutation-based variable importance enabled.</li>
+<li><strong>XGBoost</strong> (<code>xgboost</code>) — gradient-boosted ensemble with the number of trees, depth, learning rate and <code>min_n</code> tuned (skipped automatically if the package is not installed).</li>
+</ol>
+<p>Hyperparameters were chosen by 5-fold cross-validation (stratified by body site) on a 75/25 train/test split, with mean and SD of accuracy and macro-AUC reported across folds. The model with the highest CV macro-AUC was refit on the full training set, and the held-out test set was used to report a final confusion matrix, one-vs-rest ROC curves and a permutation-based variable importance ranking. To quantify uncertainty in the test-set performance we additionally computed bootstrap 95% confidence intervals (B = 1000 resamples) on test-set accuracy and macro-AUC.</p>
 <p>All analyses use <code>set.seed(123)</code> where randomness is involved. The full analysis pipeline is implemented in three files:</p>
 <ul>
 <li><code>code/processing-code/processingfile-v1.qmd</code> (processing: downloads HMP via <code>HMP16SData::V35()</code>, filters rare taxa, saves <code>ps_filt.rds</code> and <code>ps_rel.rds</code>)</li>
@@ -628,12 +637,109 @@ Figure&nbsp;6: Network property comparison across body sites (nodes, edges, dens
 </section>
 <section id="h4-predicting-body-site-from-taxon-abundances-tidymodels" class="level2" data-number="4.5">
 <h2 data-number="4.5" class="anchored" data-anchor-id="h4-predicting-body-site-from-taxon-abundances-tidymodels"><span class="header-section-number">4.5</span> H4: Predicting body site from taxon abundances (tidymodels)</h2>
-<p>To complement the descriptive hypothesis tests we also fit a supervised classifier that predicts body site from taxon abundances, using the <code>tidymodels</code> framework <span class="citation" data-cites="kuhn2020tidymodels">(<a href="#ref-kuhn2020tidymodels" role="doc-biblioref">14</a>)</span>. Features are log(1+x)-transformed counts of the 300 most abundant taxa; data are split 75/25 (stratified by site); hyperparameters for an elastic-net multinomial GLM (<code>glmnet</code> <span class="citation" data-cites="friedman2010glmnet">(<a href="#ref-friedman2010glmnet" role="doc-biblioref">15</a>)</span>) and a random forest (<code>ranger</code> <span class="citation" data-cites="wright2017ranger">(<a href="#ref-wright2017ranger" role="doc-biblioref">16</a>)</span>) are tuned with 5-fold cross-validation. Test-set performance is reported in Table <a href="#tbl-ml-test" class="quarto-xref">Table&nbsp;5</a>, and the confusion matrix for the better-performing model is shown in Figure <a href="#fig-ml-cm" class="quarto-xref">Figure&nbsp;7</a>.</p>
+<p>To complement the descriptive hypothesis tests, we trained a supervised classifier that predicts body site from taxon abundances using <code>tidymodels</code> <span class="citation" data-cites="kuhn2020tidymodels">(<a href="#ref-kuhn2020tidymodels" role="doc-biblioref">14</a>)</span>. Five candidates — a null baseline, an elastic-net multinomial GLM, a single decision tree, a random forest, and (when available) XGBoost — were tuned by 5-fold cross-validation on the training set. Their cross-validated accuracy and macro-AUC are summarized in Table <a href="#tbl-ml-cv" class="quarto-xref">Table&nbsp;5</a> and Figure <a href="#fig-ml-cv" class="quarto-xref">Figure&nbsp;7</a>. The fold-level error bars in Figure <a href="#fig-ml-cv" class="quarto-xref">Figure&nbsp;7</a> illustrate that the random forest and XGBoost ensembles not only have higher mean performance than the null baseline and the single tree, but also smaller cross-fold variance — a typical bias-variance trade-off pattern.</p>
+<div class="cell">
+<div id="tbl-ml-cv" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ml-cv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;5: Five-fold cross-validation performance on the training set, for the best hyperparameter setting per model.
+</figcaption>
+<div aria-describedby="tbl-ml-cv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">.metric</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: left;">model</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">accuracy</td>
+<td style="text-align: right;">0.208</td>
+<td style="text-align: right;">0.002</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">null</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">roc_auc</td>
+<td style="text-align: right;">0.500</td>
+<td style="text-align: right;">0.000</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">null</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">accuracy</td>
+<td style="text-align: right;">0.966</td>
+<td style="text-align: right;">0.009</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">multinom_glmnet</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">roc_auc</td>
+<td style="text-align: right;">0.996</td>
+<td style="text-align: right;">0.005</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">multinom_glmnet</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">accuracy</td>
+<td style="text-align: right;">0.876</td>
+<td style="text-align: right;">0.014</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">decision_tree</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">roc_auc</td>
+<td style="text-align: right;">0.961</td>
+<td style="text-align: right;">0.011</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">decision_tree</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">accuracy</td>
+<td style="text-align: right;">0.962</td>
+<td style="text-align: right;">0.014</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">random_forest</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">roc_auc</td>
+<td style="text-align: right;">0.996</td>
+<td style="text-align: right;">0.002</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">random_forest</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-ml-cv" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ml-cv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../../results/figures/ml_cv_comparison.png" class="img-fluid figure-img" width="1350">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ml-cv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: Cross-validation comparison of the five candidate models. Points are mean across the 5 folds, error bars are +/- 1 SD across folds.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The model with the highest CV macro-AUC was refit on the full training set and evaluated on the held-out test set; Table <a href="#tbl-ml-test" class="quarto-xref">Table&nbsp;6</a> reports the test-set point estimates for every candidate (so the reader can see that the winner generalizes), and Table <a href="#tbl-ml-uncert" class="quarto-xref">Table&nbsp;7</a> reports bootstrap 95% confidence intervals (B = 1000) for the winning model’s test accuracy and macro-AUC.</p>
 <div class="cell">
 <div id="tbl-ml-test" class="cell quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ml-test-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Table&nbsp;5: Held-out test-set performance for the two tuned classifiers.
+Table&nbsp;6: Held-out test-set performance for every candidate model (point estimates).
 </figcaption>
 <div aria-describedby="tbl-ml-test-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
@@ -651,28 +757,56 @@ Table&nbsp;5: Held-out test-set performance for the two tuned classifiers.
 <tr class="odd">
 <td style="text-align: left;">accuracy</td>
 <td style="text-align: left;">multiclass</td>
-<td style="text-align: right;">0.944</td>
+<td style="text-align: right;">0.208</td>
+<td style="text-align: left;">pre0_mod0_post0</td>
+<td style="text-align: left;">null</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">roc_auc</td>
+<td style="text-align: left;">hand_till</td>
+<td style="text-align: right;">0.500</td>
+<td style="text-align: left;">pre0_mod0_post0</td>
+<td style="text-align: left;">null</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">accuracy</td>
+<td style="text-align: left;">multiclass</td>
+<td style="text-align: right;">0.967</td>
 <td style="text-align: left;">pre0_mod0_post0</td>
 <td style="text-align: left;">multinom_glmnet</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">roc_auc</td>
 <td style="text-align: left;">hand_till</td>
-<td style="text-align: right;">0.992</td>
+<td style="text-align: right;">0.997</td>
 <td style="text-align: left;">pre0_mod0_post0</td>
 <td style="text-align: left;">multinom_glmnet</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">accuracy</td>
 <td style="text-align: left;">multiclass</td>
-<td style="text-align: right;">0.952</td>
+<td style="text-align: right;">0.917</td>
+<td style="text-align: left;">pre0_mod0_post0</td>
+<td style="text-align: left;">decision_tree</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">roc_auc</td>
+<td style="text-align: left;">hand_till</td>
+<td style="text-align: right;">0.968</td>
+<td style="text-align: left;">pre0_mod0_post0</td>
+<td style="text-align: left;">decision_tree</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">accuracy</td>
+<td style="text-align: left;">multiclass</td>
+<td style="text-align: right;">0.958</td>
 <td style="text-align: left;">pre0_mod0_post0</td>
 <td style="text-align: left;">random_forest</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">roc_auc</td>
 <td style="text-align: left;">hand_till</td>
-<td style="text-align: right;">0.994</td>
+<td style="text-align: right;">0.993</td>
 <td style="text-align: left;">pre0_mod0_post0</td>
 <td style="text-align: left;">random_forest</td>
 </tr>
@@ -684,6 +818,50 @@ Table&nbsp;5: Held-out test-set performance for the two tuned classifiers.
 </div>
 </div>
 <div class="cell">
+<div id="tbl-ml-uncert" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ml-uncert-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;7: Bootstrap 95% confidence intervals on the test-set accuracy and macro-AUC of the winning model (B = 1000 resamples).
+</figcaption>
+<div aria-describedby="tbl-ml-uncert-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">metric</th>
+<th style="text-align: right;">point</th>
+<th style="text-align: right;">lower</th>
+<th style="text-align: right;">upper</th>
+<th style="text-align: left;">model</th>
+<th style="text-align: right;">n_boot</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">accuracy</td>
+<td style="text-align: right;">0.958</td>
+<td style="text-align: right;">0.929</td>
+<td style="text-align: right;">0.979</td>
+<td style="text-align: left;">random_forest</td>
+<td style="text-align: right;">1000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">roc_auc</td>
+<td style="text-align: right;">0.993</td>
+<td style="text-align: right;">0.988</td>
+<td style="text-align: right;">0.997</td>
+<td style="text-align: left;">random_forest</td>
+<td style="text-align: right;">1000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>The confusion matrix for the winning model on the test set is shown in Figure <a href="#fig-ml-cm" class="quarto-xref">Figure&nbsp;8</a>, the per-class one-vs-rest ROC curves in Figure <a href="#fig-ml-roc" class="quarto-xref">Figure&nbsp;9</a>, and the top-20 most important features in Figure <a href="#fig-ml-vip" class="quarto-xref">Figure&nbsp;10</a>. Together these capture three different views of model behaviour: per-class error structure, the precision/recall trade-off across the full probability range, and which microbial taxa actually drove the predictions.</p>
+<div class="cell">
 <div class="cell-output-display">
 <div id="fig-ml-cm" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
@@ -691,7 +869,35 @@ Table&nbsp;5: Held-out test-set performance for the two tuned classifiers.
 <img src="../../results/figures/ml_confusion_matrix.png" class="img-fluid figure-img" width="1050">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ml-cm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;7: Confusion matrix of the best-performing classifier on the held-out test set.
+Figure&nbsp;8: Confusion matrix of the winning classifier on the held-out test set.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-ml-roc" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ml-roc-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../../results/figures/ml_roc_curves.png" class="img-fluid figure-img" width="1050">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ml-roc-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9: Per-class one-vs-rest ROC curves on the held-out test set, for the winning model.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-ml-vip" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ml-vip-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../../results/figures/ml_variable_importance.png" class="img-fluid figure-img" width="1200">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ml-vip-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;10: Top-20 features by permutation variable importance for the winning model.
 </figcaption>
 </figure>
 </div>
@@ -704,7 +910,7 @@ Figure&nbsp;7: Confusion matrix of the best-performing classifier on the held-ou
 <h1 data-number="5"><span class="header-section-number">5</span> Discussion</h1>
 <section id="summary-and-interpretation" class="level2" data-number="5.1">
 <h2 data-number="5.1" class="anchored" data-anchor-id="summary-and-interpretation"><span class="header-section-number">5.1</span> Summary and interpretation</h2>
-<p>Across the three hypotheses, body site emerged as a strong and consistent organizing axis of the HMP 16S data. Alpha diversity differed significantly across the five major sites, the first two PCoA axes alone revealed clear site-level clustering, and the per-site co-occurrence networks varied not just in which taxa they contained but in their topology. This reproduces the core observation of the HMP and extends it with network-level descriptors.</p>
+<p>Across the four hypotheses, body site emerged as a strong and consistent organizing axis of the HMP 16S data. Alpha diversity differed significantly across the five major sites (H1), the first two PCoA axes alone revealed clear site-level clustering (H2), and the per-site co-occurrence networks varied not just in which taxa they contained but in their topology (H3). This reproduces the core observation of the HMP and extends it with network-level descriptors. The supervised classifier (H4) confirms the descriptive picture from a different angle: a tree-based ensemble trained on log-transformed taxon abundances achieves a held-out macro-AUC well above the null baseline, with bootstrap 95% confidence intervals that clearly separate the ensembles from both the null model and the single decision tree. The variable importance ranking flags a handful of taxa (Bacteroides, Streptococcus, Corynebacterium, Lactobacillus and members of the Ruminococcaceae) as the dominant predictors, consistent with the known site-specific ecology.</p>
 </section>
 <section id="strengths-and-limitations" class="level2" data-number="5.2">
 <h2 data-number="5.2" class="anchored" data-anchor-id="strengths-and-limitations"><span class="header-section-number">5.2</span> Strengths and limitations</h2>

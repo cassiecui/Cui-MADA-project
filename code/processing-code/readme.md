@@ -1,15 +1,19 @@
 # processing-code
 
-This folder contains code for processing data.
+Stage 1 of the pipeline: pull the Human Microbiome Project (HMP) 16S V3–V5
+dataset, build a `phyloseq` object, and apply basic filtering.
 
-It currently contains 3 example files, showing the same processing steps done using slightly different setup with R and Quarto.
+`processingfile-v1.qmd` is the working file. It:
 
-* First, there is an R script that you can run which does all the cleaning.
-* Second, there is a Quarto file which contains exactly the same code as the R script, with some comments. Everything lives inside the Quarto file.
-* Third, my current favorite, is a Quarto file with an approach where the code is pulled in from the R script and run.
+1. Loads `HMP16SData::V35()` and converts the `SummarizedExperiment` to a
+   `phyloseq` object via `microbiome::as_phyloseq()`.
+2. Removes zero-count taxa and rare taxa (present in ≤ 5 samples).
+3. Builds a relative-abundance copy.
+4. Writes `data/processed-data/ps_filt.rds` and
+   `data/processed-data/ps_rel.rds`.
 
-The last version has the advantage of having code in one place for easy writing/debugging, and then being able to pull the code into the Quarto file for a nice combination of text/commentary and code.
-
-Each way of doing this is a reasonable approach, pick whichever one you prefer or makes the most sense for your setup. You can also mix and match. For instance for an EDA task, it might make sense to produce a Quarto file. Then I would use the 2nd or 3rd approach. If you do a main analysis, then you might just want to have an R script that does the data analysis and saves the results to a file, for later use/processing. You might not need or want a quarto file for that.
-
-Whichever approach you choose, add ample documentation/commentary so you and others can easily understand what's going on and what is done.
+The HMP data are downloaded at runtime — no large raw file is committed to
+the repo. Subsampling, rarefaction and the body-site simplification used in
+the manuscript are applied later, inside
+`code/analysis-code/statistical-analysis.R`, so `ps_filt.rds` reflects only
+the count-level filtering described above.

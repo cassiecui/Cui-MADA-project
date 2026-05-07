@@ -1,6 +1,8 @@
 # output
 
-Folder for output files from models or other analyses. These need to be
-further processed into figures or tables for presentation.
+Larger intermediate objects that are not figures or summary tables but are
+produced by the analysis pipeline.
 
-There's currently no example present.
+| File | Description |
+|------|-------------|
+| `networks.rds` | Named list of `igraph` objects, one per body site, produced by `statistical-analysis.R` (H3). Used by the supplement to plot or further interrogate individual networks. |
