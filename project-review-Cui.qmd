@@ -1,0 +1,164 @@
+---
+title: Project Review for Cui MADA project 
+author: Austin Hill
+date: 4/30/26
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+---
+
+# Overview
+
+Title of project: HMP 16S Microbiome Analysis Across Five Major Body Sites
+
+Name of project author(s): Kexin Cui
+
+Name of project reviewer: Austin Hill
+
+
+# Specific project content evaluation
+
+
+## Background, Context and Motivation
+How well is the context of the project described? Is a comprehensive background, including summary of previous/related work given? Is the project well placed into the context of existing work (including proper referencing of existing work). Is it clear why the project was undertaken and what new information it hopes to provide?
+
+### Feedback and Comments
+
+I thought this projects background, context and motivation is really solid. I thought you did a good job in explain what work is being done with 16s sequencing and the relevance of your topic. The only thing I will say is for a layperson it is a little hard to understand, but that is a minor thing. Overall, great job. 
+
+### Summary assessment (PICK ONE, DELETE THE OTHERS)
+* strong contextualization and motivation
+
+
+## Question description
+How well and clear are the question(s)/hypotheses the project aims to address described? Is it clear how the questions relate to the data?
+
+
+### Feedback and Comments
+I am not an expert at all in this area, but I thought the the three part questions are relevent and interesting. If I am being picky the only thing I could say is this might not be the most unique question (coming from a lay person), but still meets the requirements for this course. 
+
+
+### Summary assessment
+
+* question/hypotheses fully clear
+
+
+## Data description
+How well is the data overall described? Is the source provided? Is a codebook or other meta-information available that makes it clear what the data is? 
+
+### Feedback and Comments
+
+Where you are sourcing your data is clear. However, meta information is limited as I am unsure if these samples are from male or female indiviuals and at what age.
+
+### Summary assessment
+
+* source and overall structure of data somewhat explained
+
+
+
+## Data wrangling and exploratory analysis
+How well is the data cleaned/processed and explored? Are all steps reasonable and well explained? Are alternatives discussed and considered? Are meaningful exploratory results shown (e.g. in the supplementary materials)?
+
+### Feedback and Comments
+
+The data wrangling part is a little confusing for me. I found that the beginning of your processing data code is confusing when trying to load in the needed libraries. Luckily you had the code needed in the readme file in your repository home page. I think to minimize confusion you could just add this code to your processing data QMD file to help with reproducibility and decrease confusion. 
+The exploratory analysis is good. I really dont have much to add about this part. Your figures look great and tables are informative. Great Job!  
+The final thing I will say is that I dont see much discussion about alterative methods. I am not familar with this field enough to have suggestions, but could have been discussed in more detail. 
+
+
+### Summary assessment
+* some weaknesses in wrangling and exploratory component
+
+
+## Appropriateness of Analysis
+Were the analysis methods appropriate for the data? Was the analysis done properly? Were different components of the analysis (e.g. performance measure, variable selection, data pre-processing, model evaluation) done in the best way possible and explained well?
+
+### Feedback and Comments
+Most of the analysis methods are appropriate for the type of data being used. However, these are not analysis we learned in the class, but from my basic research they seem reasonable. 
+
+
+### Summary assessment 
+* strong and reasonable analysis
+
+## Presentation
+How well are results presented? Are tables and figures easy to read and understand? Are the main figures/tables publication level quality? 
+
+### Feedback and Comments
+The results are generally presented in a clear and organized way, with a logical flow from one hypothesis to the next. Tables and figures are helpful and mostly easy to understand. However, there are some inconsistencies, such as Table 1 showing more detailed body sites than those used in the main analysis, which can be confusing. As well as more detailed axis labeling would be helpful. 
+
+### Summary assessment
+* results are very well presented
+
+
+## Discussion/Conclusions
+Are the study findings properly discussed? Are strengths and limitations acknowledged? Are findings interpreted properly?
+
+### Feedback and Comments
+The discussion does a good job summarizing the main findings and connecting them to previous research, especially the original Human Microbiome Project results. The author correctly interprets that body site is a major factor in microbiome variation and acknowledges some important limitations, such as the use of rarefaction and correlation-based networks.
+
+### Summary assessment
+* strong, complete and clear discussion
+
+
+## Further comments
+None
+
+
+# Overall project content evaluation
+
+
+## Structure
+Is the project well structured? Are files in well labeled folders? Do files have reasonable names? Are all "junk" files not needed for analysis/reproduction removed? By just looking at files and folders, can you get an idea of how things fit together?
+
+### Feedback and Comments
+This area of your project could use some work. All template files need to be removed. As well as readme files in each folder need to be updated. I think this will really help with the stucture and organization of the project. 
+
+### Summary assessment
+* mostly clear, but some confusing parts (e.g. useless files, things in the wrong folders)
+
+
+
+## Documentation 
+How well is the project documented? Are you able to understand each step of the whole analysis, each decision that was made, and each line of code? Is enough information provided as comments in code or as part of Rmd files? 
+
+### Feedback and Comments
+Overall, the project is well documented and fairly easy to follow. I would say for the analysis you do that we have not learned in the class could have more explaination. Overall, good Job!
+
+### Summary assessment
+* fully and well documented
+
+
+
+## Reproducibility
+Are all results fully reproducible? Is documentation provided which clearly explains how to reproduce things, and does it work without the need for any manual intervention? Are you able to re-run the whole analysis without having to do manual interventions/edits?
+
+### Feedback and Comments
+
+I said the following in a previous part, but I will say it again because I think it will really help with reproducibility. I found that the beginning of your processing data code is confusing when trying to load in the needed libraries. Luckily you had the code needed in the readme file in your repository home page. I think to minimize confusion you could just add this code to your processing data QMD file to help with reproducibility and decrease confusion. 
+
+
+### Summary assessment
+* small parts not reproducible or required manual intervention 
+
+
+
+## Thoroughness
+How thorough was the overall study? Were alternatives (e.g. different ways of processing the data or different models) considered? Were alternatives discussed? Were the questions/hypotheses fully and thoroughly addressed?
+
+### Feedback and Comments
+The study is fairly thorough in terms of covering multiple types of analysis, including diversity metrics, clustering, networks, and classification. This gives a broad view of the data and shows a good understanding of different analytical approaches.
+
+### Summary assessment
+* strong level of thorougness
+
+
+## Further comments
+None
+
+
+
+
+
+
